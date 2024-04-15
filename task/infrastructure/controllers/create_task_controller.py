@@ -11,17 +11,32 @@ def initialize_endpoints(repository):
     @create_task_blueprint.route('/create', methods=['POST'])
     def create_task():
         data = request.get_json()
-        user_id = data.get('user_id') 
-        title = data.get('title')
+        user_id = data.get('user_id')
+        title = data.get('title', '').strip()
         start_time = data.get('start_time')
         end_time = data.get('end_time')
-        label = data.get('label')
-        description = data.get('description')
-        type = data.get('type')
+        label = data.get('label', '').strip()
+        description = data.get('description', '').strip()
+        type = data.get('type', '').strip()
         deadline = data.get('deadline')
         subtasks = data.get('subtasks', [])
         reminders = data.get('reminders', [])
 
-        task = Task(title, start_time, end_time, label, description, type, deadline, subtasks, reminders)
-        create_task_usecase.execute(task, user_id)
-        return jsonify({"message": "Task created successfully"}), 201
+        # Validación de campos obligatorios
+        required_fields = [title]
+        if not all(required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Validación de longitud de campos
+        if any(len(field) > 500 or len(field) < 1 for field in [title, label, description, type] if field):
+            return jsonify({"error": "Field length out of allowed range"}), 400
+
+        # Creación y guardado de la tarea
+        try:
+            task = Task(title, start_time, end_time, label, description, type, deadline, subtasks, reminders)
+            create_task_usecase.execute(task, user_id)
+            return jsonify({"message": "Task created successfully"}), 201
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
