@@ -13,16 +13,17 @@ class MongoDBUserRepository:
             'email': user.email,
             'password': user.password
         }
-        self.collection.insert_one(user_data)
-    
+        result = self.collection.insert_one(user_data)
+        user.id = str(result.inserted_id) 
+        
     def find_by_name(self, name):
         user_data = self.collection.find_one({'name': name})
         if user_data:
-            return User(user_data['name'], user_data['email'], user_data['password'])
+            return User(user_data['name'], user_data['email'], user_data['password'], str(user_data['_id']))
         return None
 
     def find_by_email(self, email):
         user_data = self.collection.find_one({'email': email})
         if user_data:
-            return User(user_data['name'], user_data['email'], user_data['password'])
+            return User(user_data['name'], user_data['email'], user_data['password'], str(user_data['_id']))
         return None
